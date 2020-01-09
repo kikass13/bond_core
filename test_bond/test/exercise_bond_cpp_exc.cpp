@@ -47,13 +47,18 @@
 #else
 # include <rpc.h>
 #endif
+#include <unistd.h>
 #include <gtest/gtest.h>
 #include <string>
+#include <iostream>
+#include <chrono>
+#include <thread>
+
 #include "rclcpp/rclcpp.hpp"
 #include "bondcpp/bond.hpp"
 #include "test_bond/srv/test_bond.hpp"
 
-const char TOPIC[] = "test_bond_topic";
+const char TOPIC[] = "test_bond_topic_exc";
 std::string genId()
 {
 #ifndef _WIN32
@@ -73,37 +78,31 @@ std::string genId()
 #endif
 }
 
-class TestCallbacksCpp : public ::testing::Test
+void exercise_bond_cpp_exc()
 {
-protected:
-  static void SetUpTestCase()
-  {
-    rclcpp::init(0, nullptr);
-  }
-};
-
-/*TEST_F(TestCallbacksCpp, dieInLifeCallback)
-{
-  auto nh1 = rclcpp::Node::make_shared("test_callbacks_cpp");
-  std::string id1 = genId();
-  bond::Bond a(TOPIC, id1, nh1);
-  bond::Bond b(TOPIC, id1, nh1);
-
-  a.setFormedCallback(std::bind(&bond::Bond::breakBond, &a));
+  std::string id;
+  rclcpp::Node::SharedPtr nh;
+  nh = rclcpp::Node::make_shared("tets_bond");
+  id = genId();
+  bond::Bond a(TOPIC, id, nh);
   a.start();
-  b.start();
 
-  EXPECT_TRUE(a.waitUntilFormed(rclcpp::Duration(5.0)));
-  EXPECT_TRUE(b.waitUntilBroken(rclcpp::Duration(3.0)));
-}*/
+  if (a.waitUntilFormed(rclcpp::Duration(5)) == false) {
+    std::cout << " Test of waitUntilFormed succsessful... " << std::endl;
+  } else {
+    std::cout << " Test of waitUntilFormed faild..." << std::endl;
+  }
+  if (a.waitUntilBroken(rclcpp::Duration(10)) == true) {
+    std::cout << " Test of waitUntilBroken succsessful... " << std::endl;
+  } else {
+    std::cout << " Test of waitUntilBroken faild..." << std::endl;
+  }
+}
 
-TEST_F(TestCallbacksCpp, remoteNeverConnects)
+int main(int argc, char ** argv)
 {
-  auto nh2 = rclcpp::Node::make_shared("test_callbacks_cpp_2");
-  std::string id2 = genId();
-  bond::Bond a1(TOPIC, id2, nh2);
-
-  a1.start();
-  EXPECT_FALSE(a1.waitUntilFormed(rclcpp::Duration(5.0)));
-  EXPECT_TRUE(a1.waitUntilBroken(rclcpp::Duration(10.0)));
+  rclcpp::init(argc, argv);
+  exercise_bond_cpp_exc();
+  rclcpp::shutdown();
+  return 0;
 }
