@@ -305,12 +305,8 @@ void Bond::start()
   std::unique_lock<std::mutex> lock(mutex_);
   connect_timer_reset_flag_ = true;
   connectTimerReset();
-  rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_default;
-  //  set the depth to the QoS profile
-  custom_qos_profile.depth = 5;
-  pub_ = nh_->create_publisher<bond::msg::Status>(topic_, custom_qos_profile);
-  sub_ = nh_->create_subscription<bond::msg::Status>(topic_,
-      std::bind(&Bond::bondStatusCB, this, std::placeholders::_1));
+  pub_ = nh_->create_publisher<bond::msg::Status>(topic_, rclcpp::QoS(rclcpp::KeepLast(5)));
+  sub_ = nh_->create_subscription<bond::msg::Status>(topic_, 1, std::bind(&Bond::bondStatusCB, this, std::placeholders::_1));
   publishingTimerReset();
   started_ = true;
   heartbeatTimerReset();
@@ -489,7 +485,7 @@ void Bond::publishStatus(bool active)
   msg_->active = active;
   msg_->heartbeat_timeout = heartbeat_timeout_;
   msg_->heartbeat_period = heartbeat_period_;
-  pub_->publish(msg_);
+  pub_->publish(*msg_);
 }
 
 void Bond::flushPendingCallbacks()
